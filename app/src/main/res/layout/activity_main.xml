@@ -6,24 +6,70 @@
     android:id="@+id/activity_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.example.abdlkdr.wowzasample.MainActivity">
+    tools:context="com.example.abdlkdr.wowzasample.Activity.MainActivity">
 
-    <!-- The camera preview display -->
-    <com.wowza.gocoder.sdk.api.devices.WZCameraView
+    <!--&lt;!&ndash; The camera preview display &ndash;&gt;-->
+    <VideoView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/camera_preview"
-        wowza:scaleMode="fill"
-        wowza:defaultCamera="back"
-        wowza:frameSizePreset="frameSize1280x720"/>
+        android:visibility="visible"
+        android:background="@color/colorBlack"
+        android:id="@+id/videoView"/>
+    <!--<com.wowza.gocoder.sdk.api.devices.WZCameraView-->
+        <!--android:id="@+id/camera_preview"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:layout_alignParentBottom="true"-->
+        <!--android:layout_alignParentStart="true"-->
+        <!--wowza:defaultCamera="back"-->
+        <!--wowza:frameSizePreset="frameSize1280x720"-->
+        <!--wowza:scaleMode="fill"-->
+        <!--android:visibility="visible"/>-->
 
     <!-- The broadcast button -->
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Broadcast"
+        android:text="@string/broadcast_button"
         android:id="@+id/broadcast_button"
         android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true" />
+        android:layout_centerHorizontal="true"
+        android:visibility="visible"/>
+
+    <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="150dp"
+        android:layout_height="250dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentRight="true"
+        android:layout_toEndOf="@+id/broadcast_button"
+        android:visibility="visible">
+
+        <com.wowza.gocoder.sdk.api.devices.WZCameraView
+            android:id="@+id/camera_preview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentStart="true"
+            android:visibility="visible"
+            wowza:defaultCamera="back"
+            wowza:frameSizePreset="frameSize320x240"
+            wowza:scaleMode="fill" />
+
+
+        <!--<SurfaceView-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:visibility="visible"-->
+        <!--android:layout_gravity="center"-->
+        <!--android:id="@+id/surfaceView"/>-->
+        <!--<VideoView-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:layout_gravity="center"-->
+        <!--android:id="@+id/videoView"-->
+        <!--android:visibility="visible"/>-->
+    </FrameLayout>
+
 
 </RelativeLayout>

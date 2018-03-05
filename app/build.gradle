@@ -33,6 +33,8 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
     // The GoCoder SDK library dependency declaration
+//    compile "fm.jiecao:jiecaovideoplayer:4.7.0"
+    compile 'com.squareup.okhttp:okhttp:2.5.0'
 
     compile 'com.wowza.gocoder.sdk.android:com.wowza.gocoder.sdk:1.0@aar'
 //    compile 'com.wowza.gocoder.sdk.android:com.wowza.gocoder.sdk:1.0b7@aar'
