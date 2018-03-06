@@ -101,11 +101,6 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
 //        setSurfaceHolder();
 //        setOtherUserView();
         setVideoView();
-
-
-
-
-
         // Initialize the GoCoder SDK
         goCoder = WowzaGoCoder.init(getApplicationContext(), "GOSK-D544-0103-2550-6661-CF99");
 
@@ -158,58 +153,68 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
         broadcastButton.setOnClickListener(this);
     }
 
-    private void getIntentExtra(Bundle savedInstanceState){
-        if (savedInstanceState==null){
-            User user ;
+    private String getIntentExtra(Bundle savedInstanceState) {
+        String username="";
+        if (savedInstanceState == null) {
+            User user;
             Bundle extras = getIntent().getExtras();
-            if (extras==null){
+            if (extras == null) {
                 user = new User();
-            }else {
-                String username = extras.getString("username");
+                return username;
+            } else {
+                username = extras.getString("username");
                 getUserStatus(username);
-                Toast.makeText(MainActivity.this,"Username  :   "+username,Toast.LENGTH_SHORT).show();
+                final String finalUsername = username;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Toast.makeText(MainActivity.this, "Username  :   " + finalUsername, Toast.LENGTH_SHORT).show();
+                    }
+                });
+                return finalUsername;
             }
         }
-
+        return username;
     }
 
-    private User getUserStatus(String username){
+    private User getUserStatus(String username) {
         OkHttpClient client = new OkHttpClient();
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("http")
                 .host("10.106.148.12")
                 .port(8080)
                 .addPathSegment("getUserStatus")
-                .addQueryParameter("username",username)
+                .addQueryParameter("username", username)
                 .build();
-        Log.e(TAG,"Line 123 :      url  :   "+url.toString());
+        Log.e(TAG, "Line 123 :      url  :   " + url.toString());
         Request request = new Request.Builder()
                 .url(url.toString())
                 .build();
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Request request, IOException e) {
-                Log.e(TAG,"failure line 125");
+                Log.e(TAG, "failure line 125");
             }
+
             @Override
             public void onResponse(Response response) throws IOException {
-                Log.e(TAG,"Succes Line 129");
+                Log.e(TAG, "Succes Line 129");
 
-                String result ="";
-                result=response.body().string();
-                if (result.contentEquals("")){
-                    Log.e(TAG,"Kullanıcı içeriği boş");
-                }else {
+                String result = "";
+                result = response.body().string();
+                if (result.contentEquals("")) {
+                    Log.e(TAG, "Kullanıcı içeriği boş");
+                } else {
                     JSONObject jsonObject = null;
                     try {
                         jsonObject = new JSONObject(result);
-                        if (!jsonObject.isNull("id")){
+                        if (!jsonObject.isNull("id")) {
                             user.setId(jsonObject.getString("id"));
                         }
-                        if (!jsonObject.isNull("username")){
+                        if (!jsonObject.isNull("username")) {
                             user.setUsername(jsonObject.getString("username"));
                         }
-                        if (!jsonObject.isNull("status")){
+                        if (!jsonObject.isNull("status")) {
                             user.setStatus(jsonObject.getString("status"));
                         }
                     } catch (JSONException e) {
@@ -219,6 +224,10 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
             }
         });
         return user;
+    }
+
+    private void controlRequestIsExist(){
+        
     }
 
     //Change the status if status is online then change status to offline
@@ -250,7 +259,6 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
             }
         });
     }
-
 
     private void setVideoView() {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
@@ -368,8 +376,8 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
     // The callback invoked when the broadcast button is pressed
     @Override
     public void onClick(View view) {
-        Toast.makeText(MainActivity.this,"isim  Ç:  "+user.getUsername(),Toast.LENGTH_SHORT);
-        Log.e(TAG,"username :   "+user.getUsername());
+        Toast.makeText(MainActivity.this, "isim  Ç:  " + user.getUsername(), Toast.LENGTH_SHORT);
+        Log.e(TAG, "username :   " + user.getUsername());
 
         // return if the user hasn't granted the app the necessary permissions
         if (!mPermissionsGranted) return;
@@ -385,12 +393,12 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
             goCoderBroadcaster.endBroadcast(this);
 //            setUserStatus("kadir");
             setUserStatus(user.getUsername());
-            Toast.makeText(MainActivity.this,"isim  Ç:  "+user.getUsername(),Toast.LENGTH_SHORT);
+            Toast.makeText(MainActivity.this, "isim  Ç:  " + user.getUsername(), Toast.LENGTH_SHORT);
         } else {
             // Start streaming
 //            setUserStatus("kadir");
             setUserStatus(user.getUsername());
-            Toast.makeText(MainActivity.this,"isim  Ç:  "+user.getUsername(),Toast.LENGTH_SHORT);
+            Toast.makeText(MainActivity.this, "isim  Ç:  " + user.getUsername(), Toast.LENGTH_SHORT);
             goCoderBroadcaster.startBroadcast(goCoderBroadcastConfig, this);
         }
     }

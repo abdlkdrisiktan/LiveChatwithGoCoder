@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 26
+    compileSdkVersion 27
     defaultConfig {
         applicationId "com.example.abdlkdr.wowzasample"
         minSdkVersion 19
@@ -27,7 +27,7 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 //    compile fileTree(dir: 'libs', include: ['*.jar'])
 //    compile(name:'com.wowza.gocoder.sdk', ext:'aar')
-    implementation 'com.android.support:appcompat-v7:26.1.0'
+    implementation 'com.android.support:appcompat-v7:27.1.0'
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.1'
@@ -35,6 +35,8 @@ dependencies {
     // The GoCoder SDK library dependency declaration
 //    compile "fm.jiecao:jiecaovideoplayer:4.7.0"
     compile 'com.squareup.okhttp:okhttp:2.5.0'
+    compile 'com.android.support:recyclerview-v7:27.1.0'
+
 
     compile 'com.wowza.gocoder.sdk.android:com.wowza.gocoder.sdk:1.0@aar'
 //    compile 'com.wowza.gocoder.sdk.android:com.wowza.gocoder.sdk:1.0b7@aar'

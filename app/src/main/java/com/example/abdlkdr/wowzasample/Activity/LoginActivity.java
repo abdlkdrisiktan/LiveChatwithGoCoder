@@ -32,7 +32,7 @@ public class LoginActivity  extends AppCompatActivity{
     private static final String TAG = "LoginActivity";
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         bindView();
@@ -59,7 +59,7 @@ public class LoginActivity  extends AppCompatActivity{
         OkHttpClient client = new OkHttpClient();
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("http")
-                .host("10.106.148.12")
+                .host("10.106.148.13")
                 .port(8080)
                 .addPathSegment("loginUser")
                 .addQueryParameter("username", username)
@@ -80,8 +80,9 @@ public class LoginActivity  extends AppCompatActivity{
             public void onResponse(Response response) throws IOException {
                 String tempStatus = response.body().string();
                 if (tempStatus.contentEquals("ok")) {
-                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                    Intent intent = new Intent(LoginActivity.this, ListUserActivity.class);
                     intent.putExtra("username",username);
+                    setUserStatus(username);
                     startActivity(intent);
                     Log.e("LoginActivity", " :   Succes");
                 } else {
@@ -98,7 +99,35 @@ public class LoginActivity  extends AppCompatActivity{
             }
         });
     }
+    //Change the status if status is online then change status to offline
+    //İf status is offline change status to online
+    private void setUserStatus(String username) {
+        OkHttpClient client = new OkHttpClient();
+        HttpUrl url = new HttpUrl.Builder()
+                .scheme("http")
+                .host("10.106.148.13")
+                .port(8080)
+                .addPathSegment("setUserStatus")
+                .addQueryParameter("username", username)
+                .build();
+        String myUrl = url.toString();
+        Request request = new Request.Builder()
+                .url(myUrl)
+                .build();
+        client.newCall(request).enqueue(new Callback() {
+            String status = "";
 
+            @Override
+            public void onFailure(Request request, IOException e) {
+                Log.e("setUserStatus", "Fail line");
+            }
+
+            @Override
+            public void onResponse(Response response) throws IOException {
+                status = response.body().string();
+            }
+        });
+    }
 
 
 }

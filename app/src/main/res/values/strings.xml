@@ -4,4 +4,6 @@
     <string name="play_live_broadcast">rtsp://172.20.10.2:1935/videochat/myStream_160p</string>
     <string name="deneme_live_broadcast">rtsp://172.20.10.2:1935/vod/sample.mp4</string>
     <string name="login_button">Giriş</string>
+    <string name="login_screen_kullanıcı_adı">Kullanıcı Adı</string>
+    <string name="activity_user_list_random_match_button">Random Match</string>
 </resources>
