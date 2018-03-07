@@ -15,18 +15,18 @@ public class RequestLiveChat {
     //Live chat'in url oluşturuyoruz
     private String liveChatUrl;
     //İsteği kabul edip etmediğini kontrol ediyoruz  //Yes or No
-    private String isAccepted;
+   private boolean accepted;
 
-    public RequestLiveChat(String id, User user, User toUser, String status, String liveChatUrl, String isAccepted) {
+    public RequestLiveChat() {
+    }
+
+    public RequestLiveChat(String id, User user, User toUser, String status, String liveChatUrl, boolean accepted) {
         this.id = id;
         this.user = user;
         this.toUser = toUser;
         this.status = status;
         this.liveChatUrl = liveChatUrl;
-        this.isAccepted = isAccepted;
-    }
-
-    public RequestLiveChat() {
+        this.accepted = accepted;
     }
 
     public String getId() {
@@ -69,11 +69,11 @@ public class RequestLiveChat {
         this.liveChatUrl = liveChatUrl;
     }
 
-    public String getIsAccepted() {
-        return isAccepted;
+    public boolean isAccepted() {
+        return accepted;
     }
 
-    public void setIsAccepted(String isAccepted) {
-        this.isAccepted = isAccepted;
+    public void setAccepted(boolean accepted) {
+        this.accepted = accepted;
     }
 }

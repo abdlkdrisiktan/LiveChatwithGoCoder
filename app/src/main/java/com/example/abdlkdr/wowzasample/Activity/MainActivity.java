@@ -181,7 +181,7 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
         OkHttpClient client = new OkHttpClient();
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("http")
-                .host("10.106.148.12")
+                .host("10.106.148.13")
                 .port(8080)
                 .addPathSegment("getUserStatus")
                 .addQueryParameter("username", username)
@@ -236,7 +236,7 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
         OkHttpClient client = new OkHttpClient();
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("http")
-                .host("10.106.148.12")
+                .host("10.106.148.13")
                 .port(8080)
                 .addPathSegment("setUserStatus")
                 .addQueryParameter("username", username)

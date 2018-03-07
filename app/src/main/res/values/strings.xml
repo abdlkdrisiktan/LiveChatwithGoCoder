@@ -5,5 +5,7 @@
     <string name="deneme_live_broadcast">rtsp://172.20.10.2:1935/vod/sample.mp4</string>
     <string name="login_button">Giriş</string>
     <string name="login_screen_kullanıcı_adı">Kullanıcı Adı</string>
-    <string name="activity_user_list_random_match_button">Random Match</string>
+    <string name="activity_user_list_random_match_button">Biriyle Eşleş</string>
+    <string name="alert_dialog_btn_yes">Evet</string>
+    <string name="alert_dialog_btn_no">Hayır</string>
 </resources>

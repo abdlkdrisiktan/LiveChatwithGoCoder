@@ -20,40 +20,43 @@ import java.util.List;
  * Created by abdlkdr on 6.03.2018.
  */
 
-public class RecyclerViewUserAdapter extends RecyclerView.Adapter<RecyclerViewUserAdapter.UserViewHolder>  {
+public class RecyclerViewUserAdapter extends RecyclerView.Adapter<RecyclerViewUserAdapter.UserViewHolder> {
     List<User> mUsers = new ArrayList<>();
     User toUser = new User();
-    Context mContext;
+    static Context mContext;
 
-
-    public RecyclerViewUserAdapter(Context context , ArrayList<User> users) {
-        mContext= context;
-        mUsers= users;
+    public RecyclerViewUserAdapter(Context context, ArrayList<User> users) {
+        mContext = context;
+        mUsers = users;
     }
-    public class UserViewHolder extends RecyclerView.ViewHolder{
-        public TextView usernameTextView,statusTextView;
-        public ImageView profilePictureImageView;
-       public UserViewHolder(View itemView) {
-           super(itemView);
-           bindView(itemView);
-           mContext = itemView.getContext();
-       }
-       public void bindView(View view){
-           usernameTextView = (TextView)view.findViewById(R.id.usernameTextView);
-           statusTextView = (TextView)view.findViewById(R.id.statusTextView);
-           profilePictureImageView = (ImageView)view.findViewById(R.id.personImageView);
-       }
-   }
+
+
+    public static class UserViewHolder extends RecyclerView.ViewHolder {
+        TextView usernameTextView, statusTextView;
+        ImageView profilePictureImageView;
+
+        public UserViewHolder(View itemView) {
+            super(itemView);
+            bindView(itemView);
+            mContext = itemView.getContext();
+        }
+
+        public void bindView(View view) {
+            usernameTextView = (TextView) view.findViewById(R.id.usernameTextView);
+            statusTextView = (TextView) view.findViewById(R.id.statusTextView);
+            profilePictureImageView = (ImageView) view.findViewById(R.id.personImageView);
+        }
+    }
 
     @Override
     public RecyclerViewUserAdapter.UserViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.recyclerview_user_list,parent,false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.recyclerview_user_list, parent, false);
         UserViewHolder userViewHolder = new UserViewHolder(view);
         return userViewHolder;
     }
 
     @Override
-    public void onBindViewHolder(RecyclerViewUserAdapter.UserViewHolder holder, int position) {
+    public void onBindViewHolder(RecyclerViewUserAdapter.UserViewHolder holder, final int position) {
         final User user = mUsers.get(position);
         holder.statusTextView.setText(user.getStatus());
         holder.usernameTextView.setText("@"+user.getUsername());
@@ -64,6 +67,7 @@ public class RecyclerViewUserAdapter extends RecyclerView.Adapter<RecyclerViewUs
                 ıntent.putExtra("username",user.getUsername());
                 ıntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 ıntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                getUser(position);
                 mContext.startActivity(ıntent);
 
             }
@@ -74,4 +78,10 @@ public class RecyclerViewUserAdapter extends RecyclerView.Adapter<RecyclerViewUs
     public int getItemCount() {
         return mUsers.size();
     }
+
+    public User getUser (int position){
+        return mUsers.get(position);
+    }
+
+
 }
