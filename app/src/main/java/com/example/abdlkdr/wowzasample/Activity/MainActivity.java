@@ -3,6 +3,7 @@ package com.example.abdlkdr.wowzasample.Activity;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.media.MediaPlayer;
@@ -23,6 +24,7 @@ import android.widget.MediaController;
 import android.widget.Toast;
 import android.widget.VideoView;
 
+import com.example.abdlkdr.wowzasample.Model.RequestLiveChat;
 import com.example.abdlkdr.wowzasample.Model.User;
 import com.example.abdlkdr.wowzasample.R;
 import com.squareup.okhttp.Callback;
@@ -42,6 +44,7 @@ import com.wowza.gocoder.sdk.api.status.WZState;
 import com.wowza.gocoder.sdk.api.status.WZStatus;
 import com.wowza.gocoder.sdk.api.status.WZStatusCallback;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -92,18 +95,25 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
 
     final User user = new User();
 
+    public String otherUsername="";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         bindView();
-        getIntentExtra(savedInstanceState);
+        //getIntentExtra(savedInstanceState);
 //        setSurfaceHolder();
 //        setOtherUserView();
         setVideoView();
+//        getRequestDataInformation();
+
         // Initialize the GoCoder SDK
         goCoder = WowzaGoCoder.init(getApplicationContext(), "GOSK-D544-0103-2550-6661-CF99");
 
+        SharedPreferences prefs = getSharedPreferences(ListUserActivity.MY_PREFS_NAME, MODE_PRIVATE);
+        //Kullanıcının kendisi
+        String toUser  = ListUserActivity.lastUsername;
         if (goCoder == null) {
             // If initialization failed, retrieve the last error and display it
             WZError goCoderInitError = WowzaGoCoder.getLastError();
@@ -135,8 +145,14 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
         goCoderBroadcastConfig.setHostAddress("172.20.10.2");
 //        goCoderBroadcastConfig.setHostAddress("10.106.148.14");
         goCoderBroadcastConfig.setPortNumber(1935);
-        goCoderBroadcastConfig.setApplicationName("videochatm");
-        goCoderBroadcastConfig.setStreamName("myStream");
+        Log.d(TAG, "toUser  :   "+toUser    +   " username :    "+ otherUsername);
+
+//        goCoderBroadcastConfig.setApplicationName(toUser);
+//        goCoderBroadcastConfig.setStreamName(otherUsername);
+        goCoderBroadcastConfig.setApplicationName("videochat");
+        goCoderBroadcastConfig.setStreamName("melih");
+//        goCoderBroadcastConfig.setApplicationName("videochatm");
+//        goCoderBroadcastConfig.setStreamName("myStream");
         goCoderBroadcastConfig.setUsername("denemesource");
         goCoderBroadcastConfig.setPassword("Kadir1509");
 
@@ -163,7 +179,7 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
                 return username;
             } else {
                 username = extras.getString("username");
-                getUserStatus(username);
+//                getUserStatus(username);
                 final String finalUsername = username;
                 runOnUiThread(new Runnable() {
                     @Override
@@ -181,7 +197,7 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
         OkHttpClient client = new OkHttpClient();
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("http")
-                .host("10.106.148.13")
+                .host("10.106.148.12")
                 .port(8080)
                 .addPathSegment("getUserStatus")
                 .addQueryParameter("username", username)
@@ -226,20 +242,16 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
         return user;
     }
 
-    private void controlRequestIsExist(){
-        
-    }
-
     //Change the status if status is online then change status to offline
     //İf status is offline change status to online
-    private void setUserStatus(String username) {
+    private void setUserStatus() {
         OkHttpClient client = new OkHttpClient();
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("http")
-                .host("10.106.148.13")
+                .host("10.106.148.12")
                 .port(8080)
                 .addPathSegment("setUserStatus")
-                .addQueryParameter("username", username)
+                .addQueryParameter("username", ListUserActivity.lastUsername)
                 .build();
         String myUrl = url.toString();
         Request request = new Request.Builder()
@@ -271,6 +283,12 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
                             Log.e("handler ", "  stream ıs atcıve " + streamIsActive);
                             MediaController mediaController = new MediaController(getApplicationContext());
                             mediaController.setAnchorView(videoView);
+                            Uri.Builder builder = new Uri.Builder();
+                            builder.scheme("rtsp")
+                                    .authority("172.20.10.2:1935")
+                                    .appendPath("videochat")
+                                    .appendPath("kadir");//toUser
+                                    //rtsp://172.20.10.2:1935/videochat/myStream_160p
                             Uri uri = Uri.parse(getResources().getString(R.string.play_live_broadcast));
                             videoView.setVideoURI(uri);
                             videoView.setMediaController(mediaController);
@@ -328,7 +346,7 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
     protected void onResume() {
         super.onResume();
 
-        // If running on Android 6 (Marshmallow) or above, check to see if the necessary permissions
+        // Android 6 (Marshmallow) or above,
         // have been granted
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             mPermissionsGranted = hasPermissions(this, mRequiredPermissions);
@@ -355,7 +373,7 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
         switch (requestCode) {
             case PERMISSIONS_REQUEST_CODE: {
                 // Check the result of each permission granted
-                for (int grantResult : grantResults) {
+                for(int grantResult : grantResults) {
                     if (grantResult != PackageManager.PERMISSION_GRANTED) {
                         mPermissionsGranted = false;
                     }
@@ -364,7 +382,9 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
         }
     }
 
+    //
     // Utility method to check the status of a permissions request for an array of permission identifiers
+    //
     private static boolean hasPermissions(Context context, String[] permissions) {
         for (String permission : permissions)
             if (context.checkCallingOrSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
@@ -392,12 +412,12 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
             // Stop the broadcast that is currently running
             goCoderBroadcaster.endBroadcast(this);
 //            setUserStatus("kadir");
-            setUserStatus(user.getUsername());
+            setUserStatus();
             Toast.makeText(MainActivity.this, "isim  Ç:  " + user.getUsername(), Toast.LENGTH_SHORT);
         } else {
             // Start streaming
 //            setUserStatus("kadir");
-            setUserStatus(user.getUsername());
+            setUserStatus();
             Toast.makeText(MainActivity.this, "isim  Ç:  " + user.getUsername(), Toast.LENGTH_SHORT);
             goCoderBroadcaster.startBroadcast(goCoderBroadcastConfig, this);
         }
@@ -597,5 +617,93 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
             result = (info.orientation - degrees + 360) % 360;
         }
         camera.setDisplayOrientation(result);
+    }
+    private void getRequestDataInformation() {
+        final String asd = null;
+        OkHttpClient client = new OkHttpClient();
+        HttpUrl url = new HttpUrl.Builder()
+                .scheme("http")
+                .port(8080)
+                .host("10.106.148.12")
+                .addPathSegment("getRequest")
+                .addQueryParameter("user", ListUserActivity.lastUsername)
+                .build();
+        Request request = new Request.Builder().url(url.toString()).build();
+        client.newCall(request)
+                .enqueue(new Callback() {
+                    @Override
+                    public void onFailure(Request request, IOException e) {
+
+                    }
+
+                    @Override
+                    public void onResponse(final Response response) throws IOException {
+                        final String myResponse = response.body().string();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (response.body() != null) {
+                                    JSONObject jsonObject;
+                                    RequestLiveChat requestLiveChat = new RequestLiveChat();
+                                    try {
+                                        jsonObject = new JSONObject(myResponse);
+                                        if (!jsonObject.isNull("id")) {
+                                            requestLiveChat.setId(jsonObject.getString("id"));
+                                        }
+
+                                        if (!jsonObject.isNull("status")) {
+                                            requestLiveChat.setStatus(jsonObject.getString("status"));
+                                        }
+                                        if (!jsonObject.isNull("liveChatUrl")) {
+                                            requestLiveChat.setLiveChatUrl(jsonObject.getString("liveChatUrl"));
+                                        }
+                                        if (!jsonObject.isNull("accepted")) {
+                                            requestLiveChat.setAccepted(jsonObject.getBoolean("accepted"));
+                                        }
+                                        if (!jsonObject.isNull("user")) {
+                                            JSONArray array = jsonObject.getJSONArray("user");
+                                            User user = new User();
+                                            for (int i = 0; i < array.length(); i++) {
+                                                JSONObject object = array.getJSONObject(i);
+                                                if (!object.isNull("id")) {
+                                                    user.setId(object.getString("id"));
+                                                }
+                                                if (!object.isNull("username")) {
+                                                    user.setUsername(object.getString("username"));
+                                                    otherUsername = user.getUsername();
+                                                }
+                                                if (!object.isNull("status")) {
+                                                    user.setStatus(object.getString("status"));
+                                                }
+                                            }
+                                            requestLiveChat.setUser(user);
+                                        }
+                                        if (!jsonObject.isNull("toUser")) {
+                                            JSONArray array = jsonObject.getJSONArray("toUser");
+                                            User toUser = new User();
+                                            for (int i = 0; i < array.length(); i++) {
+                                                JSONObject object = array.getJSONObject(i);
+                                                if (!object.isNull("id")) {
+                                                    toUser.setId(object.getString("id"));
+                                                }
+                                                if (!object.isNull("username")) {
+                                                    toUser.setUsername(object.getString("username"));
+                                                }
+                                                if (!object.isNull("status")) {
+                                                    toUser.setStatus(object.getString("status"));
+                                                }
+                                            }
+                                            requestLiveChat.setToUser(toUser);
+                                        }
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+
+                                }
+                            }
+                        });
+
+                    }
+                });
     }
 }

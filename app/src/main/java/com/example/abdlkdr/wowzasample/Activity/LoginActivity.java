@@ -59,7 +59,7 @@ public class LoginActivity  extends AppCompatActivity{
         OkHttpClient client = new OkHttpClient();
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("http")
-                .host("10.106.148.13")
+                .host("10.106.148.12")
                 .port(8080)
                 .addPathSegment("loginUser")
                 .addQueryParameter("username", username)
@@ -105,7 +105,7 @@ public class LoginActivity  extends AppCompatActivity{
         OkHttpClient client = new OkHttpClient();
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("http")
-                .host("10.106.148.13")
+                .host("10.106.148.12")
                 .port(8080)
                 .addPathSegment("setUserStatus")
                 .addQueryParameter("username", username)
