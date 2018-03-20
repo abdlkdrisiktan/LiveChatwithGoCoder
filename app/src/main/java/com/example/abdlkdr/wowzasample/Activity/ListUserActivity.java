@@ -1,11 +1,11 @@
 package com.example.abdlkdr.wowzasample.Activity;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -16,9 +16,11 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.example.abdlkdr.wowzasample.Adapter.RecyclerViewUserAdapter;
+import com.example.abdlkdr.wowzasample.Model.ChatUsers;
 import com.example.abdlkdr.wowzasample.Model.RequestLiveChat;
 import com.example.abdlkdr.wowzasample.Model.User;
 import com.example.abdlkdr.wowzasample.R;
+import com.example.abdlkdr.wowzasample.Util.Constant;
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.HttpUrl;
 import com.squareup.okhttp.OkHttpClient;
@@ -48,24 +50,57 @@ public class ListUserActivity extends AppCompatActivity {
 
     public ArrayList<User> userArrayList = new ArrayList<>();
 
-    private static final String getAllUserUrl = "http://10.106.148.12:8080/getAllUser";
-
     private static final String TAG = "ListUserActivity";
 
     public static String lastUsername = "";
 
-    public static final String MY_PREFS_NAME = "MyPrefsFile";
+    public SharedPreferences sharedpreferences;
+
+    public ChatUsers chatUsers = new ChatUsers();
+
+    public Timer timer = new Timer();
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_userlist);
+        sharedpreferences = getSharedPreferences(Constant.MyPREFERENCES, Context.MODE_PRIVATE);
         lastUsername = getIntentExtra(savedInstanceState);
         bindView();
-        getAllUser();
+        getAllUser(lastUsername);
         getIntentExtra(savedInstanceState);
         checkRequestIsExist();
         setViewAction();
+
+    }
+
+    @Override
+    public void onBackPressed() {
+        AlertDialog.Builder builder;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            builder = new AlertDialog.Builder(this, R.style.Theme_AppCompat);
+        } else {
+            builder = new AlertDialog.Builder(this);
+        }
+        builder.setMessage(R.string.alert_dialog_exit_text)
+                .setPositiveButton(R.string.alert_dialog_btn_yes, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        setUserStatus(Constant.OFFLINE);
+                        SharedPreferences.Editor editor = sharedpreferences.edit();
+                        editor.clear();
+                        editor.apply();
+                        finish();
+
+                    }
+                })
+                .setNegativeButton(R.string.alert_dialog_btn_no, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.cancel();
+                    }
+                })
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
+
     }
 
     private void bindView() {
@@ -73,10 +108,19 @@ public class ListUserActivity extends AppCompatActivity {
         recyclerView = (RecyclerView) findViewById(R.id.recyclerView);
     }
 
-    private void getAllUser() {
+    //The list display online users
+    private void getAllUser(final String username) {
         OkHttpClient client = new OkHttpClient();
+//        private static final String getAllUserUrl = "http://10.106.148.11:8080/getAllUser";
+        HttpUrl url = new HttpUrl.Builder()
+                .scheme("http")
+                .host(Constant.SYSTEMIP)
+                .port(8080)
+                .addPathSegment("getAllUser")
+                .addQueryParameter("username", username)
+                .build();
         Request request = new Request.Builder()
-                .url(getAllUserUrl)
+                .url(url.toString())
                 .build();
         client.newCall(request).enqueue(new Callback() {
             @Override
@@ -87,7 +131,7 @@ public class ListUserActivity extends AppCompatActivity {
             @Override
             public void onResponse(final Response response) throws IOException {
                 final String myResponse = response.body().string();
-                final String username = lastUsername;
+
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -96,10 +140,8 @@ public class ListUserActivity extends AppCompatActivity {
                                 JSONArray jsonArray = new JSONArray(myResponse);
                                 for (int i = 0; i < jsonArray.length(); i++) {
                                     User user = new User();
-                                    boolean isUsernameExist = false;
                                     JSONObject jsonObject = jsonArray.getJSONObject(i);
                                     if (!jsonObject.isNull("status")) {
-                                        Log.e(TAG, "status line");
                                         if (jsonObject.getString("status").contentEquals("online")) {
                                             user.setStatus(jsonObject.getString("status"));
                                             if (!jsonObject.isNull("id")) {
@@ -107,38 +149,31 @@ public class ListUserActivity extends AppCompatActivity {
                                             }
                                             if (!jsonObject.isNull("username")) {
                                                 user.setUsername(jsonObject.getString("username"));
-                                                if (user.getUsername().contentEquals(username)) {
-                                                    Log.e(TAG, "username :   " + username + "user model username :   " + user.getUsername());
-                                                    isUsernameExist = true;
-                                                    if (isUsernameExist == true) {
-                                                        userArrayList.remove(user);
-                                                    }
-                                                }
-                                                Log.e(TAG, "bbbbbbbbb" + user.getUsername());
                                             }
+                                            userArrayList.add(user);
+                                        } else {
+                                            userArrayList.remove(user);
                                         }
+
                                     }
-                                    if ((user.getUsername() != null) && isUsernameExist == false)
-                                        userArrayList.add(user);
                                 }
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
                         }
-
                         recyclerViewUserAdapter = new RecyclerViewUserAdapter(getApplicationContext(), userArrayList);
                         recyclerView.setAdapter(recyclerViewUserAdapter);
                         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(ListUserActivity.this);
                         recyclerView.setLayoutManager(layoutManager);
                         recyclerView.setHasFixedSize(true);
 //                        recyclerViewUserAdapter.notifyDataSetChanged();
-//                                                new Timer().schedule(new TimerTask() {
-//                            @Override
-//                            public void run() {
-////                                Log.e(TAG,"DENEME");
-//                                getAllUser();
-//                            }
-//                        },1000);
+                        timer.schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                userArrayList.clear();
+                                getAllUser(username);
+                            }
+                        }, 1000);
                     }
                 });
 
@@ -147,6 +182,7 @@ public class ListUserActivity extends AppCompatActivity {
 
     }
 
+    //Getting username
     private String getIntentExtra(Bundle savedInstanceState) {
         String username = "";
         if (savedInstanceState == null) {
@@ -171,11 +207,12 @@ public class ListUserActivity extends AppCompatActivity {
         return username;
     }
 
+    //Check any request comes
     private void checkRequestIsExist() {
         OkHttpClient client = new OkHttpClient();
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("http")
-                .host("10.106.148.12")
+                .host(Constant.SYSTEMIP)
                 .port(8080)
                 .addPathSegment("checkRequestIsExist")
                 .addQueryParameter("toUser", lastUsername)
@@ -196,10 +233,13 @@ public class ListUserActivity extends AppCompatActivity {
                             public void run() {
                                 if (response.body() != null) {
                                     String result = myFinalResponse;
+
                                     if (result.contentEquals("yes")) {
                                         alertDialogBuilder();
+                                        timer.cancel();
+                                        timer.purge();
                                     } else {
-                                        new Timer().schedule(new TimerTask() {
+                                        timer.schedule(new TimerTask() {
                                             @Override
                                             public void run() {
                                                 checkRequestIsExist();
@@ -223,49 +263,33 @@ public class ListUserActivity extends AppCompatActivity {
         }
 
         builder.setTitle("Eşleşme Bulundu")
-                .setMessage("Birisiyle eşleşdin konuşmaya başlamak ister misin?")
+                .setMessage("Birisiyle eşleştin konuşmaya başlamak ister misin?")
                 .setPositiveButton(R.string.alert_dialog_btn_yes, new DialogInterface.OnClickListener() {
 
                     public void onClick(DialogInterface dialog, int which) {
-                        Intent ıntent = new Intent(ListUserActivity.this, MainActivity.class);
-                        Log.e(TAG,"yes button is active");
-
                         changeAcceptedStatus("true");
-                        final String otherUsername = getRequestDataInformation();
-                        Log.d(TAG, "onClick: other username is  :   "+otherUsername);
-                        ıntent.putExtra("otherUsername",otherUsername);
-                        startActivity(ıntent);
-//                        ıntent.putExtra("toUsername",)
-//burada main activity gidecek ve konuşamnın başlamasını bekleycek tabı burada request gelen karsının username ihtiyacımız var cunku wowza da
-                        //url oluştururken 1. kullanıcı/ 2. kullanıcı sekılde yapacağız
+                        getRequestData();
                     }
                 })
                 .setNegativeButton(R.string.alert_dialog_btn_no, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
-                        Log.e(TAG,"no button is active");
                         changeAcceptedStatus("false");
-
-//                        checkRequestIsExist();
-//                        burada public void changeRequestLiveChatStatus(String user, String toUser)
-                        //method cağırıp daha sonrasında  kontrol edecek ve metot içerisnde accepted secenıngı false etmek gerekir bir daha
-                        //istek göndermemesi için ardı ardına
                     }
                 })
                 .setIcon(android.R.drawable.ic_dialog_alert)
                 .show();
-
-
     }
 
+    //İf accept the live chat make isAccepted trueq
     private void changeAcceptedStatus(String acceptedStatus) {
         OkHttpClient client = new OkHttpClient();
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("http")
-                .host("10.106.148.12")
+                .host(Constant.SYSTEMIP)
                 .port(8080)
                 .addPathSegment("changeAcceptedStatus")
                 .addQueryParameter("toUser", lastUsername)
-                .addQueryParameter("acceptedStatus",acceptedStatus)
+                .addQueryParameter("acceptedStatus", acceptedStatus)
                 .build();
         Request request = new Request.Builder().url(url.toString()).build();
         client.newCall(request).enqueue(new Callback() {
@@ -281,6 +305,7 @@ public class ListUserActivity extends AppCompatActivity {
         });
     }
 
+    //Button click
     private void setViewAction() {
         btnRandomMatch.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -291,16 +316,17 @@ public class ListUserActivity extends AppCompatActivity {
         });
     }
 
-    private void getAcceptedStatus(){
+    //Controlling if it's accepted
+    private void getAcceptedStatus() {
         OkHttpClient client = new OkHttpClient();
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("http")
-                .host("10.106.148.12")
+                .host(Constant.SYSTEMIP)
                 .port(8080)
                 .addPathSegment("getAcceptedStatus")
                 .addQueryParameter("user", lastUsername)
                 .build();
-        final Request  request = new Request.Builder().url(url.toString()).build();
+        final Request request = new Request.Builder().url(url.toString()).build();
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(Request request, IOException e) {
@@ -313,18 +339,17 @@ public class ListUserActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        if (response.body()!=null){
+                        if (response.body() != null) {
                             String result = myResponse;
-                            if (result.contentEquals("true" )){
-                                Intent ıntent = new Intent(ListUserActivity.this,MainActivity.class);
-                                startActivity(ıntent);
-                            }else {
+                            if (result.contentEquals("true")) {
+                                getRequestData();
+                            } else {
                                 new Timer().schedule(new TimerTask() {
                                     @Override
                                     public void run() {
                                         getAcceptedStatus();
                                     }
-                                },1000);
+                                }, 1000);
                             }
                         }
                     }
@@ -338,7 +363,7 @@ public class ListUserActivity extends AppCompatActivity {
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("http")
                 .port(8080)
-                .host("10.106.148.12")
+                .host(Constant.SYSTEMIP)
                 .addPathSegment("createRequestLiveChat")
                 .addQueryParameter("user", lastUsername)
                 .build();
@@ -376,36 +401,30 @@ public class ListUserActivity extends AppCompatActivity {
                                     requestLiveChat.setAccepted(jsonObject.getBoolean("accepted"));
                                 }
                                 if (!jsonObject.isNull("user")) {
-                                    JSONArray array = jsonObject.getJSONArray("user");
+                                    JSONObject array = jsonObject.getJSONObject("user");
                                     User user = new User();
-                                    for (int i = 0; i < array.length(); i++) {
-                                        JSONObject object = array.getJSONObject(i);
-                                        if (!object.isNull("id")) {
-                                            user.setId(object.getString("id"));
-                                        }
-                                        if (!object.isNull("username")) {
-                                            user.setUsername(object.getString("username"));
-                                        }
-                                        if (!object.isNull("status")) {
-                                            user.setStatus(object.getString("status"));
-                                        }
+                                    if (!array.isNull("id")) {
+                                        user.setId(array.getString("id"));
+                                    }
+                                    if (!array.isNull("username")) {
+                                        user.setUsername(array.getString("username"));
+                                    }
+                                    if (!array.isNull("status")) {
+                                        user.setStatus(array.getString("status"));
                                     }
                                     requestLiveChat.setUser(user);
                                 }
                                 if (!jsonObject.isNull("toUser")) {
-                                    JSONArray array = jsonObject.getJSONArray("toUser");
+                                    JSONObject array = jsonObject.getJSONObject("toUser");
                                     User toUser = new User();
-                                    for (int i = 0; i < array.length(); i++) {
-                                        JSONObject object = array.getJSONObject(i);
-                                        if (!object.isNull("id")) {
-                                            toUser.setId(object.getString("id"));
-                                        }
-                                        if (!object.isNull("username")) {
-                                            toUser.setUsername(object.getString("username"));
-                                        }
-                                        if (!object.isNull("status")) {
-                                            toUser.setStatus(object.getString("status"));
-                                        }
+                                    if (!array.isNull("id")) {
+                                        toUser.setId(array.getString("id"));
+                                    }
+                                    if (!array.isNull("username")) {
+                                        toUser.setUsername(array.getString("username"));
+                                    }
+                                    if (!array.isNull("status")) {
+                                        toUser.setStatus(array.getString("status"));
                                     }
                                     requestLiveChat.setToUser(toUser);
                                 }
@@ -419,99 +438,144 @@ public class ListUserActivity extends AppCompatActivity {
         });
     }
 
-    private String  getRequestDataInformation() {
+    //Change the status if status is online then change status to offline
+    //İf status is offline change status to online
+    private void setUserStatus(String status) {
+        OkHttpClient client = new OkHttpClient();
+        HttpUrl url = new HttpUrl.Builder()
+                .scheme("http")
+                .host(Constant.SYSTEMIP)
+                .port(8080)
+                .addPathSegment("setUserStatus")
+                .addQueryParameter("username", ListUserActivity.lastUsername)
+                .addQueryParameter("status", status)
+                .build();
+        String myUrl = url.toString();
+        Request request = new Request.Builder()
+                .url(myUrl)
+                .build();
+        client.newCall(request).enqueue(new Callback() {
+            String status = "";
 
+            @Override
+            public void onFailure(Request request, IOException e) {
+                Log.e("setUserStatus", "Fail line");
+            }
+
+            @Override
+            public void onResponse(Response response) throws IOException {
+                status = response.body().string();
+                Log.e(TAG, "onResponse: DENEME ");
+            }
+        });
+    }
+
+    private void getRequestData() {
         final RequestLiveChat requestLiveChat = new RequestLiveChat();
-        final SharedPreferences.Editor editor = getSharedPreferences(MY_PREFS_NAME, MODE_PRIVATE).edit();
         OkHttpClient client = new OkHttpClient();
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("http")
                 .port(8080)
-                .host("10.106.148.12")
-                .addPathSegment("getRequest")
-                .addQueryParameter("user", lastUsername)
+                .host(Constant.SYSTEMIP)
+                .addPathSegment("getRequestData")
+                .addQueryParameter("username", lastUsername)
                 .build();
+        Log.e(TAG, "getRequestDataInformation: " + url.toString());
         Request request = new Request.Builder().url(url.toString()).build();
-        client.newCall(request)
-                .enqueue(new Callback() {
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Request request, IOException e) {
+
+            }
+
+            @Override
+            public void onResponse(final Response response) throws IOException {
+                final String myResponse = response.body().string();
+                runOnUiThread(new Runnable() {
                     @Override
-                    public void onFailure(Request request, IOException e) {
-
-                    }
-
-                    @Override
-                    public void onResponse(final Response response) throws IOException {
-                        final String myResponse = response.body().string();
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (response.body() != null) {
-                                    JSONObject jsonObject;
-
-                                    try {
-                                        jsonObject = new JSONObject(myResponse);
-                                        if (!jsonObject.isNull("id")) {
-                                            requestLiveChat.setId(jsonObject.getString("id"));
-                                        }
-
-                                        if (!jsonObject.isNull("status")) {
-                                            requestLiveChat.setStatus(jsonObject.getString("status"));
-                                        }
-                                        if (!jsonObject.isNull("liveChatUrl")) {
-                                            requestLiveChat.setLiveChatUrl(jsonObject.getString("liveChatUrl"));
-                                        }
-                                        if (!jsonObject.isNull("accepted")) {
-                                            requestLiveChat.setAccepted(jsonObject.getBoolean("accepted"));
-                                        }
-                                        if (!jsonObject.isNull("user")) {
-                                            JSONArray array = jsonObject.getJSONArray("user");
-                                            User user = new User();
-                                            for (int i = 0; i < array.length(); i++) {
-                                                JSONObject object = array.getJSONObject(i);
-                                                if (!object.isNull("id")) {
-                                                    user.setId(object.getString("id"));
-                                                }
-                                                if (!object.isNull("username")) {
-
-                                                    user.setUsername(object.getString("username"));
-                                                    editor.putString("username",user.getUsername());
-                                                }
-                                                if (!object.isNull("status")) {
-                                                    user.setStatus(object.getString("status"));
-                                                }
-                                            }
-                                            requestLiveChat.setUser(user);
-                                        }
-                                        if (!jsonObject.isNull("toUser")) {
-                                            JSONArray array = jsonObject.getJSONArray("toUser");
-                                            User toUser = new User();
-                                            for (int i = 0; i < array.length(); i++) {
-                                                JSONObject object = array.getJSONObject(i);
-                                                if (!object.isNull("id")) {
-                                                    toUser.setId(object.getString("id"));
-                                                }
-                                                if (!object.isNull("username")) {
-                                                    toUser.setUsername(object.getString("username"));
-                                                    editor.putString("toUser",toUser.getUsername());
-                                                }
-                                                if (!object.isNull("status")) {
-                                                    toUser.setStatus(object.getString("status"));
-                                                }
-                                            }
-                                            requestLiveChat.setToUser(toUser);
-
-                                        }
-                                        editor.apply();
-                                    } catch (JSONException e) {
-                                        e.printStackTrace();
-                                    }
+                    public void run() {
+                        if (response.body() != null) {
+                            JSONObject jsonObject;
+                            Log.e(TAG, "run: if içerisi");
+                            try {
+                                jsonObject = new JSONObject(myResponse);
+                                if (!jsonObject.isNull("id")) {
+                                    requestLiveChat.setId(jsonObject.getString("id"));
                                 }
-                            }
-                        });
+                                if (!jsonObject.isNull("status")) {
+                                    requestLiveChat.setStatus(jsonObject.getString("status"));
+                                }
+                                if (!jsonObject.isNull("liveChatUrl")) {
+                                    requestLiveChat.setLiveChatUrl(jsonObject.getString("liveChatUrl"));
+                                }
+                                if (!jsonObject.isNull("accepted")) {
+                                    requestLiveChat.setAccepted(jsonObject.getBoolean("accepted"));
+                                }
+                                if (!jsonObject.isNull("user")) {
+                                    JSONObject array = jsonObject.getJSONObject("user");
+                                    User user = new User();
+                                    if (!array.isNull("id")) {
+                                        user.setId(array.getString("id"));
+                                    }
+                                    if (!array.isNull("username")) {
+                                        user.setUsername(array.getString("username"));
+                                        chatUsers.setUserUsername(user.getUsername());
+                                        Log.e(TAG, "run: Line 504 User username is  :" + user.getUsername());
+                                    }
+                                    if (!array.isNull("status")) {
+                                        user.setStatus(array.getString("status"));
+                                    }
+                                    requestLiveChat.setUser(user);
+                                }
+                                if (!jsonObject.isNull("toUser")) {
+                                    JSONObject array = jsonObject.getJSONObject("toUser");
+                                    User toUser = new User();
+                                    if (!array.isNull("id")) {
+                                        toUser.setId(array.getString("id"));
+                                    }
+                                    if (!array.isNull("username")) {
+                                        toUser.setUsername(array.getString("username"));
+                                        Log.e(TAG, "run: Line 519" + "    toUser username is : " + toUser.getUsername());
+                                        chatUsers.setToUserUsername(toUser.getUsername());
+                                    }
+                                    if (!array.isNull("status")) {
+                                        toUser.setStatus(array.getString("status"));
+                                    }
+                                    requestLiveChat.setToUser(toUser);
+                                }
 
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                            //editor.commit() writes the data synchronously (blocking the thread its called from). It then informs you about the success of the operation.
+                            //apply() schedules the data to be written asynchronously. It does not inform you about the success of the operation.
+                            if (!lastUsername.contentEquals(chatUsers.getUserUsername())){
+                                Intent ıntent = new Intent(ListUserActivity.this, MainActivity.class);
+                                ıntent.putExtra(Constant.OTHERUSERNAME, chatUsers.getUserUsername());
+                                Log.e(TAG, "İSTEĞİN GELDİĞİ TARAF");
+                                Log.e(TAG, "İSTEĞİ GÖNDEREN KİŞİ    :   "+chatUsers.getUserUsername()+" İSTEĞİ ALAN TARAF   :   "+lastUsername );
+                                timer.cancel();
+                                timer.purge();
+                                startActivity(ıntent);
+                                finish();
+                            }else {
+                                Log.e(TAG, "İSTEK GÖNDEREN TARAF" );
+                                Log.e(TAG, "İSTEĞİ GÖNDEREN KİŞİ    :   "+lastUsername+"    İSTEĞİ ALAN TARAF   :   "+chatUsers.getToUserUsername() );
+                                Intent ıntent = new Intent(ListUserActivity.this,MainActivity.class);
+                                ıntent.putExtra(Constant.OTHERUSERNAME,chatUsers.getToUserUsername());
+                                timer.cancel();
+                                timer.purge();
+                                startActivity(ıntent);
+                                finish();
+                            }
+                            Log.e(TAG, "onClick: Line 531 userUsername is  " + chatUsers.getUserUsername());
+                            Log.e(TAG, "run: Line 531 toUserUsername is  "+chatUsers.getToUserUsername() );
+                        }
                     }
                 });
-        return requestLiveChat.getUser().getUsername();
+
+            }
+        });
 
     }
 

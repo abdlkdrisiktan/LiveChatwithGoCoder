@@ -1,11 +1,10 @@
 package com.example.abdlkdr.wowzasample.Activity;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.hardware.Camera;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
@@ -15,18 +14,15 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Surface;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.MediaController;
 import android.widget.Toast;
 import android.widget.VideoView;
 
-import com.example.abdlkdr.wowzasample.Model.RequestLiveChat;
 import com.example.abdlkdr.wowzasample.Model.User;
 import com.example.abdlkdr.wowzasample.R;
+import com.example.abdlkdr.wowzasample.Util.Constant;
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.HttpUrl;
 import com.squareup.okhttp.OkHttpClient;
@@ -44,30 +40,20 @@ import com.wowza.gocoder.sdk.api.status.WZState;
 import com.wowza.gocoder.sdk.api.status.WZStatus;
 import com.wowza.gocoder.sdk.api.status.WZStatusCallback;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class MainActivity extends AppCompatActivity implements WZStatusCallback,View.OnClickListener, SurfaceHolder.Callback {
+public class MainActivity extends AppCompatActivity implements WZStatusCallback, View.OnClickListener {
 
-    //Camera hardware
-    private Camera camera;
+    //telefon da ki yayın kadir
+    //rtsp://172.20.10.2:1935/videochat/kadir
+    //tablet melih
+    //rtsp://172.20.10.2:1935/videochat/melih
 
-    //Holder for the cameraview
-    private SurfaceHolder surfaceHolder;
+    private VideoView videoView;
 
-    //Check stream ıs active
-    public boolean streamIsActive= false;
-
-    private VideoView videoView,otherUserView;
-
-    //For camera view using surfaceview
-    private SurfaceView surfaceView;
     // The top level GoCoder API interface
     private WowzaGoCoder goCoder;
 
@@ -83,37 +69,38 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
     // The broadcast configuration settings
     private WZBroadcastConfig goCoderBroadcastConfig;
 
-    private static final String TAG="MainActivity";
+    private static final String TAG = "MainActivity";
+
+    final User user = new User();
 
     // Properties needed for Android 6+ permissions handling
     private static final int PERMISSIONS_REQUEST_CODE = 0x1;
     private boolean mPermissionsGranted = true;
-    private String[] mRequiredPermissions = new String[] {
+    private String[] mRequiredPermissions = new String[]{
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO
     };
 
-    final User user = new User();
-
-    public String otherUsername="";
+    private String otherUsername = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+//        sharedPreferences = getSharedPreferences(Constant.MyPREFERENCES, Context.MODE_PRIVATE);
+//        otherUsername = sharedPreferences.getString(Constant.OTHERUSERNAME, "No name");
+        otherUsername = getIntentExtra(savedInstanceState);
+        Log.e(TAG, "onCreate: otherUsername is   " + otherUsername + " My username  :   " + ListUserActivity.lastUsername);
         bindView();
-        //getIntentExtra(savedInstanceState);
-//        setSurfaceHolder();
-//        setOtherUserView();
-        setVideoView();
-//        getRequestDataInformation();
+        createClickStatus();
+        getClickStatus(otherUsername);
+
+
+
 
         // Initialize the GoCoder SDK
         goCoder = WowzaGoCoder.init(getApplicationContext(), "GOSK-D544-0103-2550-6661-CF99");
 
-        SharedPreferences prefs = getSharedPreferences(ListUserActivity.MY_PREFS_NAME, MODE_PRIVATE);
-        //Kullanıcının kendisi
-        String toUser  = ListUserActivity.lastUsername;
         if (goCoder == null) {
             // If initialization failed, retrieve the last error and display it
             WZError goCoderInitError = WowzaGoCoder.getLastError();
@@ -123,9 +110,10 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
             return;
         }
 
+
         // Associate the WZCameraView defined in the U/I layout with the corresponding class member
         goCoderCameraView = (WZCameraView) findViewById(R.id.camera_preview);
-        if (!goCoderCameraView.getCamera().isFront()){
+        if (!goCoderCameraView.getCamera().isFront()) {
             goCoderCameraView.switchCamera();
         }
         goCoderCameraView.setZOrderMediaOverlay(true);
@@ -137,26 +125,23 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
 
         // Create a broadcaster instance
         goCoderBroadcaster = new WZBroadcast();
-
         // Create a configuration instance for the broadcaster
-        goCoderBroadcastConfig = new WZBroadcastConfig(WZMediaConfig.FRAME_SIZE_1920x1080);
+//        goCoderBroadcastConfig = new WZBroadcastConfig(WZMediaConfig.FRAME_SIZE_640x480);
+        goCoderBroadcastConfig = new WZBroadcastConfig(WZMediaConfig.FRAME_SIZE_1280x720);
 
         // Set the connection properties for the target Wowza Streaming Engine server or Wowza Cloud account
-        goCoderBroadcastConfig.setHostAddress("172.20.10.2");
-//        goCoderBroadcastConfig.setHostAddress("10.106.148.14");
-        goCoderBroadcastConfig.setPortNumber(1935);
-        Log.d(TAG, "toUser  :   "+toUser    +   " username :    "+ otherUsername);
+        goCoderBroadcastConfig.setHostAddress("mobiversitewowza.westeurope.cloudapp.azure.com");
+//        goCoderBroadcastConfig.setHostAddress("172.20.10.2");
 
-//        goCoderBroadcastConfig.setApplicationName(toUser);
-//        goCoderBroadcastConfig.setStreamName(otherUsername);
+        goCoderBroadcastConfig.setPortNumber(1935);
         goCoderBroadcastConfig.setApplicationName("videochat");
-        goCoderBroadcastConfig.setStreamName("melih");
-//        goCoderBroadcastConfig.setApplicationName("videochatm");
-//        goCoderBroadcastConfig.setStreamName("myStream");
+        goCoderBroadcastConfig.setStreamName(ListUserActivity.lastUsername);
+//        goCoderBroadcastConfig.setStreamName(ListUserActivity.lastUsername);
+//        goCoderBroadcastConfig.setStreamName("deneme");
         goCoderBroadcastConfig.setUsername("denemesource");
         goCoderBroadcastConfig.setPassword("Kadir1509");
 
-        Log.e("Broadcast Config","  Line 95"+goCoderBroadcastConfig.toString());
+        Log.e("Broadcast Config", "  Line 95" + goCoderBroadcastConfig.toString());
 
         // Designate the camera preview as the video broadcaster
         goCoderBroadcastConfig.setVideoBroadcaster(goCoderCameraView);
@@ -169,176 +154,14 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
         broadcastButton.setOnClickListener(this);
     }
 
-    private String getIntentExtra(Bundle savedInstanceState) {
-        String username="";
-        if (savedInstanceState == null) {
-            User user;
-            Bundle extras = getIntent().getExtras();
-            if (extras == null) {
-                user = new User();
-                return username;
-            } else {
-                username = extras.getString("username");
-//                getUserStatus(username);
-                final String finalUsername = username;
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(MainActivity.this, "Username  :   " + finalUsername, Toast.LENGTH_SHORT).show();
-                    }
-                });
-                return finalUsername;
-            }
-        }
-        return username;
-    }
-
-    private User getUserStatus(String username) {
-        OkHttpClient client = new OkHttpClient();
-        HttpUrl url = new HttpUrl.Builder()
-                .scheme("http")
-                .host("10.106.148.12")
-                .port(8080)
-                .addPathSegment("getUserStatus")
-                .addQueryParameter("username", username)
-                .build();
-        Log.e(TAG, "Line 123 :      url  :   " + url.toString());
-        Request request = new Request.Builder()
-                .url(url.toString())
-                .build();
-        client.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(Request request, IOException e) {
-                Log.e(TAG, "failure line 125");
-            }
-
-            @Override
-            public void onResponse(Response response) throws IOException {
-                Log.e(TAG, "Succes Line 129");
-
-                String result = "";
-                result = response.body().string();
-                if (result.contentEquals("")) {
-                    Log.e(TAG, "Kullanıcı içeriği boş");
-                } else {
-                    JSONObject jsonObject = null;
-                    try {
-                        jsonObject = new JSONObject(result);
-                        if (!jsonObject.isNull("id")) {
-                            user.setId(jsonObject.getString("id"));
-                        }
-                        if (!jsonObject.isNull("username")) {
-                            user.setUsername(jsonObject.getString("username"));
-                        }
-                        if (!jsonObject.isNull("status")) {
-                            user.setStatus(jsonObject.getString("status"));
-                        }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        });
-        return user;
-    }
-
-    //Change the status if status is online then change status to offline
-    //İf status is offline change status to online
-    private void setUserStatus() {
-        OkHttpClient client = new OkHttpClient();
-        HttpUrl url = new HttpUrl.Builder()
-                .scheme("http")
-                .host("10.106.148.12")
-                .port(8080)
-                .addPathSegment("setUserStatus")
-                .addQueryParameter("username", ListUserActivity.lastUsername)
-                .build();
-        String myUrl = url.toString();
-        Request request = new Request.Builder()
-                .url(myUrl)
-                .build();
-        client.newCall(request).enqueue(new Callback() {
-            String status = "";
-
-            @Override
-            public void onFailure(Request request, IOException e) {
-                Log.e("setUserStatus", "Fail line");
-            }
-
-            @Override
-            public void onResponse(Response response) throws IOException {
-                status = response.body().string();
-            }
-        });
-    }
-
-    private void setVideoView() {
-        new Handler(Looper.getMainLooper()).post(new Runnable() {
-            @Override
-            public void run() {
-                boolean haandler = new Handler().postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (streamIsActive == true) {
-                            Log.e("handler ", "  stream ıs atcıve " + streamIsActive);
-                            MediaController mediaController = new MediaController(getApplicationContext());
-                            mediaController.setAnchorView(videoView);
-                            Uri.Builder builder = new Uri.Builder();
-                            builder.scheme("rtsp")
-                                    .authority("172.20.10.2:1935")
-                                    .appendPath("videochat")
-                                    .appendPath("kadir");//toUser
-                                    //rtsp://172.20.10.2:1935/videochat/myStream_160p
-                            Uri uri = Uri.parse(getResources().getString(R.string.play_live_broadcast));
-                            videoView.setVideoURI(uri);
-                            videoView.setMediaController(mediaController);
-                            videoView.requestFocus();
-                            streamIsActive = false;
-                            videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-                                @Override
-                                public void onPrepared(MediaPlayer mp) {
-                                    Log.e("asd", "asd");
-                                    Log.e("Deneme ", "DEENEME");
-                                    mp.start();
-                                    return;
-                                }
-                            });
-                        } else {
-                            new Timer().schedule(new TimerTask() {
-                                @Override
-                                public void run() {
-                                    setVideoView();
-                                }
-                            }, 1000);
-                        }
-                    }
-                }, 10000);
-
-
-            }
-        });
-
-
-    }
-
-    private void bindView() {
-        videoView = (VideoView) findViewById(R.id.videoView);
-        videoView.setZOrderMediaOverlay(true);
-        videoView.setZOrderOnTop(true);
-        videoView.setVisibility(View.VISIBLE);
-        // Associate the WZCameraView defined in the U/I layout with the corresponding class member
-        goCoderCameraView = (WZCameraView) findViewById(R.id.camera_preview);
-
-//        otherUserView= (VideoView)findViewById(R.id.otherUserView);
-//        otherUserView.setVisibility(View.VISIBLE);
-//        otherUserView.setZOrderOnTop(true);
-//        otherUserView.setZOrderMediaOverlay(true);
-
-//        surfaceView = (SurfaceView)findViewById(R.id.surfaceView);
-//        surfaceView.setVisibility(View.VISIBLE);
-//        surfaceView.setZOrderMediaOverlay(true);
-//        surfaceView.setZOrderOnTop(true);
-
+    @Override
+    public void onBackPressed() {
+        deleteRequestLiveChat(ListUserActivity.lastUsername);
+        setUserStatus(Constant.ONLINE);
+        Intent ıntent = new Intent(MainActivity.this,ListUserActivity.class);
+        ıntent.putExtra("username",ListUserActivity.lastUsername);
+        startActivity(ıntent);
+        finish();
     }
 
     // Called when an activity is brought to the foreground
@@ -365,15 +188,14 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
 
     }
 
-    // Callback invoked in response to a call to ActivityCompat.requestPermissions() to interpret
-    // the results of the permissions request
+    // The results of the permissions request
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         mPermissionsGranted = true;
         switch (requestCode) {
             case PERMISSIONS_REQUEST_CODE: {
                 // Check the result of each permission granted
-                for(int grantResult : grantResults) {
+                for (int grantResult : grantResults) {
                     if (grantResult != PackageManager.PERMISSION_GRANTED) {
                         mPermissionsGranted = false;
                     }
@@ -382,9 +204,7 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
         }
     }
 
-    //
     // Utility method to check the status of a permissions request for an array of permission identifiers
-    //
     private static boolean hasPermissions(Context context, String[] permissions) {
         for (String permission : permissions)
             if (context.checkCallingOrSelfPermission(permission) != PackageManager.PERMISSION_GRANTED)
@@ -396,9 +216,6 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
     // The callback invoked when the broadcast button is pressed
     @Override
     public void onClick(View view) {
-        Toast.makeText(MainActivity.this, "isim  Ç:  " + user.getUsername(), Toast.LENGTH_SHORT);
-        Log.e(TAG, "username :   " + user.getUsername());
-
         // return if the user hasn't granted the app the necessary permissions
         if (!mPermissionsGranted) return;
 
@@ -411,15 +228,12 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
         } else if (goCoderBroadcaster.getStatus().isRunning()) {
             // Stop the broadcast that is currently running
             goCoderBroadcaster.endBroadcast(this);
-//            setUserStatus("kadir");
-            setUserStatus();
-            Toast.makeText(MainActivity.this, "isim  Ç:  " + user.getUsername(), Toast.LENGTH_SHORT);
+            setClickStatus("false");
         } else {
             // Start streaming
-//            setUserStatus("kadir");
-            setUserStatus();
-            Toast.makeText(MainActivity.this, "isim  Ç:  " + user.getUsername(), Toast.LENGTH_SHORT);
+            setUserStatus(Constant.OFFLINE);
             goCoderBroadcaster.startBroadcast(goCoderBroadcastConfig, this);
+            setClickStatus("true");
         }
     }
 
@@ -440,8 +254,7 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
 
             case WZState.RUNNING:
                 statusMessage.append("Streaming is active");
-                streamIsActive = true;
-
+//                setVideoView();
                 break;
 
             case WZState.STOPPING:
@@ -496,214 +309,284 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
                             | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
     }
 
-    //For the camera implements first creating camera
-    @Override
-    public void surfaceCreated(SurfaceHolder holder) {
-        //if you want to open front facing camera use this line
-        camera = Camera.open(Camera.CameraInfo.CAMERA_FACING_FRONT);
-        try {
-            camera = Camera.open();
-
-        } catch (Exception e) {
-            System.out.println(e);
-            Log.e("Line 388", "   ");
-            return;
-        }
-        Camera.Parameters parameters = camera.getParameters();
-        List<Camera.Size> previewSizes = parameters.getSupportedPreviewSizes();
-//        previewSizes.get(0).width=175;
-//        previewSizes.get(0).height = 100;
-        Camera.Size previewSize = previewSizes.get(0);
-        for (int i = 0; i < previewSizes.size(); i++) {
-            if (previewSizes.get(i).width > previewSize.width)
-                previewSize = previewSizes.get(i);
-        }
-        parameters.setPreviewSize(previewSize.width, previewSize.height);
-        parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
-//        parameters.set("rotation", 90);
-//        parameters.setRotation(90);
-        camera.setParameters(parameters);
-
-        int cameraId = -1;
-        int numberOfCameras = Camera.getNumberOfCameras();
-        for (int i = 0; i < numberOfCameras; i++) {
-            Camera.CameraInfo info = new Camera.CameraInfo();
-            Camera.getCameraInfo(i, info);
-            if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-                cameraId = i;
-                break;
-            }
-        }
-//        camera.startPreview();
-        try {
-            setCameraDisplayOrientation(MainActivity.this, cameraId, camera);
-            camera.setPreviewDisplay(surfaceHolder);
-            camera.startPreview();
-        } catch (RuntimeException e) {
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-    }
-
-    //For the camera implements if change camera view
-    @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        if (surfaceHolder == null) {
-            return;
-        }
-        try {
-            camera.stopPreview();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        int cameraId = -1;
-        int numberOfCameras = Camera.getNumberOfCameras();
-        for (int i = 0; i < numberOfCameras; i++) {
-            Camera.CameraInfo info = new Camera.CameraInfo();
-            Camera.getCameraInfo(i, info);
-            if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-                cameraId = i;
-                break;
-            }
-        }
-        try {
-            setCameraDisplayOrientation(MainActivity.this, cameraId, camera);
-            camera.setPreviewDisplay(surfaceHolder);
-            camera.startPreview();
-        } catch (Exception e) {
-
-        }
-    }
-
-    //For the camera implements for destroyed camera view
-    @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
-        camera.stopPreview();
-        camera.release();
-        camera = null;
-    }
-
-    //Configure camera display rotation
-    public static void setCameraDisplayOrientation(Activity activity,
-                                                   int cameraId, android.hardware.Camera camera) {
-        android.hardware.Camera.CameraInfo info =
-                new android.hardware.Camera.CameraInfo();
-        android.hardware.Camera.getCameraInfo(cameraId, info);
-        int rotation = activity.getWindowManager().getDefaultDisplay()
-                .getRotation();
-        int degrees = 0;
-        switch (rotation) {
-            case Surface.ROTATION_0:
-                degrees = 0;
-                break;
-            case Surface.ROTATION_90:
-                degrees = 90;
-                break;
-            case Surface.ROTATION_180:
-                degrees = 180;
-                break;
-            case Surface.ROTATION_270:
-                degrees = 270;
-                break;
-        }
-
-        int result;
-        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-            result = (info.orientation + degrees) % 360;
-            result = (360 - result) % 360;  // compensate the mirror
-        } else {  // back-facing
-            result = (info.orientation - degrees + 360) % 360;
-        }
-        camera.setDisplayOrientation(result);
-    }
-    private void getRequestDataInformation() {
-        final String asd = null;
+    //Change the status if status is online then change status to offline
+    //İf status is offline change status to online
+    private void setUserStatus(String status) {
         OkHttpClient client = new OkHttpClient();
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("http")
+                .host(Constant.SYSTEMIP)
                 .port(8080)
-                .host("10.106.148.12")
-                .addPathSegment("getRequest")
-                .addQueryParameter("user", ListUserActivity.lastUsername)
+                .addPathSegment("setUserStatus")
+                .addQueryParameter("username", ListUserActivity.lastUsername)
+                .addQueryParameter("status",status)
                 .build();
-        Request request = new Request.Builder().url(url.toString()).build();
-        client.newCall(request)
-                .enqueue(new Callback() {
-                    @Override
-                    public void onFailure(Request request, IOException e) {
+        String myUrl = url.toString();
+        Request request = new Request.Builder()
+                .url(myUrl)
+                .build();
+        client.newCall(request).enqueue(new Callback() {
+            String status = "";
 
-                    }
+            @Override
+            public void onFailure(Request request, IOException e) {
+                Log.e("setUserStatus", "Fail line");
+            }
 
-                    @Override
-                    public void onResponse(final Response response) throws IOException {
+            @Override
+            public void onResponse(Response response) throws IOException {
+                status = response.body().string();
+                Log.e(TAG, "onResponse: setUserStatus : "+status );
+
+            }
+        });
+    }
+
+    //The camera view display live stream video
+    private void setVideoView(final String toUser) {
+        try {
+
+            String liveChatUrl = "rtsp://mobiversitewowza.westeurope.cloudapp.azure.com:1935/videochat/" + toUser;
+            Log.d(TAG, "run: setVideoView URL    :   " + liveChatUrl);
+            videoView.setVideoURI(Uri.parse(liveChatUrl));
+            videoView.start();
+            videoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                @Override
+                public boolean onError(MediaPlayer mp, int what, int extra) {
+                    setVideoView(toUser);
+                    Log.e(TAG, "Error playing video 353");
+                    return true;
+                }
+            });
+
+
+        } catch (Exception e) {
+            setVideoView(toUser);
+            e.printStackTrace();
+        }
+//            Thread.sleep(3000);
+//            MediaController mediaController = new MediaController(MainActivity.this);
+//            mediaController.setAnchorView(videoView);
+
+        //rtsp://13.95.194.217:1935/videochat/melih
+
+        //rtsp://172.20.10.2:1935/videochat/melih
+        //rtsp://172.20.10.2:1935/videochat/myStream_160p
+//                            Uri uri = Uri.parse(getResources().getString(R.string.play_live_broadcast));
+        //Uri uri = Uri.parse(builder.toString());
+//                            Uri uri = Uri.parse(url.toString());
+//            Uri uri = Uri.parse(liveChatUrl);
+
+//            videoView.start();
+//            videoView.setMediaController(mediaController);
+//            videoView.requestFocus();
+
+//            videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+//                @Override
+//                public void onPrepared(MediaPlayer mp) {
+//                    Log.e(TAG, "onPrepared: videoview onprepater");
+////                    mp.start();
+//                    videoView.start();
+//                }
+//            });
+//            videoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+//                @Override
+//                public boolean onError(MediaPlayer mp, int what, int extra) {
+//                    Log.e(TAG, String.format("Error(%s%s)", what, extra));
+//                    return true;
+//                }
+//            });
+    }
+
+    private void bindView() {
+
+        videoView = (VideoView) findViewById(R.id.videoView);
+        videoView.setZOrderMediaOverlay(true);
+        videoView.setZOrderOnTop(true);
+        videoView.setVisibility(View.VISIBLE);
+        // Associate the WZCameraView defined in the U/I layout with the corresponding class member
+        goCoderCameraView = (WZCameraView) findViewById(R.id.camera_preview);
+
+    }
+
+    //Creating for button click
+    private void createClickStatus() {
+        if (ListUserActivity.lastUsername != null) {
+            Log.e(TAG, "createClickStatus: if statment ");
+            OkHttpClient client = new OkHttpClient();
+            HttpUrl url = new HttpUrl.Builder()
+                    .scheme("http")
+                    .host(Constant.SYSTEMIP)
+                    .port(8080)
+                    .addPathSegment("createClickStatus")
+                    .addQueryParameter("user", ListUserActivity.lastUsername)
+                    .build();
+            Request request = new Request.Builder()
+                    .url(url.toString())
+                    .build();
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Request request, IOException e) {
+
+                }
+
+                @Override
+                public void onResponse(Response response) throws IOException {
+                    Log.e(TAG, "onResponse: CreateClickStatus");
+                }
+            });
+        } else {
+            Log.e(TAG, "setClickStatus: Else statment kullanıcının kendi user ismini bulamadık ");
+        }
+    }
+
+    //Setting buttun state
+    private void setClickStatus(String isClick){
+        if (ListUserActivity.lastUsername !=null){
+            OkHttpClient client = new OkHttpClient();
+            HttpUrl url = new HttpUrl.Builder()
+                    .scheme("http")
+                    .host(Constant.SYSTEMIP)
+                    .port(8080)
+                    .addPathSegment("setClickStatus")
+                    .addQueryParameter("user", ListUserActivity.lastUsername)
+                    .addQueryParameter("isClick",isClick)
+                    .build();
+            Request request = new Request.Builder().url(url.toString()).build();
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Request request, IOException e) {
+
+                }
+
+                @Override
+                public void onResponse(Response response) throws IOException {
+
+                }
+            });
+        }else {
+            Log.e(TAG, "setClickStatus: Else statment kullanıcının kendi user ismini bulamadık " );
+        }
+
+    }
+
+    //If click is true then setting live chat
+    private void getClickStatus(final String toUSer){
+        if (otherUsername!=null){
+            Log.e(TAG, "getClickStatus:  username is "  + toUSer );
+            OkHttpClient client = new OkHttpClient();
+            HttpUrl url = new HttpUrl.Builder()
+                    .scheme("http")
+                    .host(Constant.SYSTEMIP)
+                    .port(8080)
+                    .addPathSegment("getClickStatus")
+                    .addQueryParameter("toUser", toUSer)
+                    .build();
+            Request request = new Request.Builder().url(url.toString()).build();
+            client.newCall(request).enqueue(new Callback() {
+                @Override
+                public void onFailure(Request request, IOException e) {
+
+                }
+                @Override
+                public void onResponse(final Response response) throws IOException {
+                    runOnUiThread(new Runnable() {
                         final String myResponse = response.body().string();
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (response.body() != null) {
-                                    JSONObject jsonObject;
-                                    RequestLiveChat requestLiveChat = new RequestLiveChat();
-                                    try {
-                                        jsonObject = new JSONObject(myResponse);
-                                        if (!jsonObject.isNull("id")) {
-                                            requestLiveChat.setId(jsonObject.getString("id"));
+                        @Override
+                        public void run() {
+                            if (response.body()!=null){
+                                Timer timer = new Timer();
+                                if (myResponse.contentEquals("true")){
+                                    Log.e(TAG, "run: before setVideoView" );
+                                    timer.cancel();
+                                    timer.purge();
+                                    setVideoView(toUSer);
+                                }else {
+                                    Log.e(TAG, "run: else statment");
+                                    timer.schedule(new TimerTask() {
+                                        @Override
+                                        public void run() {
+                                            getClickStatus(toUSer);
+                                            Log.e(TAG, "run: DENEME TİMER" );
                                         }
-
-                                        if (!jsonObject.isNull("status")) {
-                                            requestLiveChat.setStatus(jsonObject.getString("status"));
-                                        }
-                                        if (!jsonObject.isNull("liveChatUrl")) {
-                                            requestLiveChat.setLiveChatUrl(jsonObject.getString("liveChatUrl"));
-                                        }
-                                        if (!jsonObject.isNull("accepted")) {
-                                            requestLiveChat.setAccepted(jsonObject.getBoolean("accepted"));
-                                        }
-                                        if (!jsonObject.isNull("user")) {
-                                            JSONArray array = jsonObject.getJSONArray("user");
-                                            User user = new User();
-                                            for (int i = 0; i < array.length(); i++) {
-                                                JSONObject object = array.getJSONObject(i);
-                                                if (!object.isNull("id")) {
-                                                    user.setId(object.getString("id"));
-                                                }
-                                                if (!object.isNull("username")) {
-                                                    user.setUsername(object.getString("username"));
-                                                    otherUsername = user.getUsername();
-                                                }
-                                                if (!object.isNull("status")) {
-                                                    user.setStatus(object.getString("status"));
-                                                }
-                                            }
-                                            requestLiveChat.setUser(user);
-                                        }
-                                        if (!jsonObject.isNull("toUser")) {
-                                            JSONArray array = jsonObject.getJSONArray("toUser");
-                                            User toUser = new User();
-                                            for (int i = 0; i < array.length(); i++) {
-                                                JSONObject object = array.getJSONObject(i);
-                                                if (!object.isNull("id")) {
-                                                    toUser.setId(object.getString("id"));
-                                                }
-                                                if (!object.isNull("username")) {
-                                                    toUser.setUsername(object.getString("username"));
-                                                }
-                                                if (!object.isNull("status")) {
-                                                    toUser.setStatus(object.getString("status"));
-                                                }
-                                            }
-                                            requestLiveChat.setToUser(toUser);
-                                        }
-                                    } catch (JSONException e) {
-                                        e.printStackTrace();
-                                    }
-
+                                    },2000);
                                 }
                             }
-                        });
+                        }
+                    });
+                }
+            });
+        }else {
+            Log.e(TAG, "getClickStatus: Fail line other username bulunamadı " );
+        }
 
-                    }
-                });
     }
+    //İf accept the live chat make isAccepted trueq
+    private void changeAcceptedStatus(String acceptedStatus) {
+        OkHttpClient client = new OkHttpClient();
+        HttpUrl url = new HttpUrl.Builder()
+                .scheme("http")
+                .host(Constant.SYSTEMIP)
+                .port(8080)
+                .addPathSegment("changeAcceptedStatus")
+                .addQueryParameter("toUser", ListUserActivity.lastUsername)
+                .addQueryParameter("acceptedStatus", acceptedStatus)
+                .build();
+        Request request = new Request.Builder().url(url.toString()).build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Request request, IOException e) {
+
+            }
+
+            @Override
+            public void onResponse(Response response) throws IOException {
+
+            }
+        });
+    }
+
+    private void deleteRequestLiveChat(String username){
+        OkHttpClient client = new OkHttpClient();
+        // http://10.106.148.11:8080/deleteRequestLiveChat?username=kadir
+        HttpUrl url = new HttpUrl.Builder()
+                .scheme("http")
+                .host(Constant.SYSTEMIP)
+                .port(8080)
+                .addPathSegment("deleteRequestLiveChat")
+                .addQueryParameter("username", username)
+                .build();
+        Request request = new Request.Builder().url(url.toString()).build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Request request, IOException e) {
+                Log.e(TAG, "onFailure: 567" );
+            }
+
+            @Override
+            public void onResponse(Response response) throws IOException {
+                Log.e(TAG, "onResponse: " );
+            }
+        });
+
+    }
+
+    //Getting other user username
+    private String getIntentExtra(Bundle savedInstanceState) {
+        String username = "";
+        if (savedInstanceState == null) {
+            User user;
+            Bundle extras = getIntent().getExtras();
+            if (extras == null) {
+                user = new User();
+                return username;
+            } else {
+                username = extras.getString(Constant.OTHERUSERNAME);
+                return username;
+            }
+        }
+        return username;
+    }
+
+
 }

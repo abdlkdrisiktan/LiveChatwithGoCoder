@@ -8,23 +8,20 @@
     android:layout_height="match_parent"
     tools:context="com.example.abdlkdr.wowzasample.Activity.MainActivity">
 
-    <!--&lt;!&ndash; The camera preview display &ndash;&gt;-->
+    <!--The live stream display-->
     <VideoView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="visible"
         android:background="@color/colorBlack"
         android:id="@+id/videoView"/>
-    <!--<com.wowza.gocoder.sdk.api.devices.WZCameraView-->
-        <!--android:id="@+id/camera_preview"-->
+    <!--<com.wowza.gocoder.sdk.api.player.WZPlayerView-->
         <!--android:layout_width="match_parent"-->
         <!--android:layout_height="match_parent"-->
-        <!--android:layout_alignParentBottom="true"-->
-        <!--android:layout_alignParentStart="true"-->
-        <!--wowza:defaultCamera="back"-->
-        <!--wowza:frameSizePreset="frameSize1280x720"-->
-        <!--wowza:scaleMode="fill"-->
-        <!--android:visibility="visible"/>-->
+        <!--android:id="@+id/vwStreamPlayer"-->
+        <!--android:layout_alignParentStart="false"-->
+        <!--android:layout_centerInParent="true" />-->
+
 
     <!-- The broadcast button -->
     <Button
@@ -45,6 +42,7 @@
         android:layout_toEndOf="@+id/broadcast_button"
         android:visibility="visible">
 
+        <!-- The camera preview display-->
         <com.wowza.gocoder.sdk.api.devices.WZCameraView
             android:id="@+id/camera_preview"
             android:layout_width="match_parent"
@@ -55,20 +53,6 @@
             wowza:defaultCamera="back"
             wowza:frameSizePreset="frameSize320x240"
             wowza:scaleMode="fill" />
-
-
-        <!--<SurfaceView-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="match_parent"-->
-        <!--android:visibility="visible"-->
-        <!--android:layout_gravity="center"-->
-        <!--android:id="@+id/surfaceView"/>-->
-        <!--<VideoView-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="match_parent"-->
-        <!--android:layout_gravity="center"-->
-        <!--android:id="@+id/videoView"-->
-        <!--android:visibility="visible"/>-->
     </FrameLayout>
 
 

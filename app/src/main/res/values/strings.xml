@@ -8,4 +8,6 @@
     <string name="activity_user_list_random_match_button">Biriyle Eşleş</string>
     <string name="alert_dialog_btn_yes">Evet</string>
     <string name="alert_dialog_btn_no">Hayır</string>
+    <string name="alert_dialog_exit_text">Are you sure you want to exit?</string>
+
 </resources>

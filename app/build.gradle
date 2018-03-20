@@ -38,6 +38,6 @@ dependencies {
     compile 'com.android.support:recyclerview-v7:27.1.0'
 
 
-    compile 'com.wowza.gocoder.sdk.android:com.wowza.gocoder.sdk:1.0@aar'
-//    compile 'com.wowza.gocoder.sdk.android:com.wowza.gocoder.sdk:1.0b7@aar'
+//    compile 'com.wowza.gocoder.sdk.android:com.wowza.gocoder.sdk:1.0@aar'
+    compile 'com.wowza.gocoder.sdk.android:com.wowza.gocoder.sdk:1.0b7@aar'
 }

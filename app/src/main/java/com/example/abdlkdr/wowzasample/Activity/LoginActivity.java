@@ -11,6 +11,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.example.abdlkdr.wowzasample.R;
+import com.example.abdlkdr.wowzasample.Util.Constant;
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.HttpUrl;
 import com.squareup.okhttp.OkHttpClient;
@@ -59,7 +60,7 @@ public class LoginActivity  extends AppCompatActivity{
         OkHttpClient client = new OkHttpClient();
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("http")
-                .host("10.106.148.12")
+                .host(Constant.SYSTEMIP)
                 .port(8080)
                 .addPathSegment("loginUser")
                 .addQueryParameter("username", username)
@@ -82,7 +83,7 @@ public class LoginActivity  extends AppCompatActivity{
                 if (tempStatus.contentEquals("ok")) {
                     Intent intent = new Intent(LoginActivity.this, ListUserActivity.class);
                     intent.putExtra("username",username);
-                    setUserStatus(username);
+                    setUserStatus(username,Constant.ONLINE);
                     startActivity(intent);
                     Log.e("LoginActivity", " :   Succes");
                 } else {
@@ -101,14 +102,15 @@ public class LoginActivity  extends AppCompatActivity{
     }
     //Change the status if status is online then change status to offline
     //İf status is offline change status to online
-    private void setUserStatus(String username) {
+    private void setUserStatus(String username,String status) {
         OkHttpClient client = new OkHttpClient();
         HttpUrl url = new HttpUrl.Builder()
                 .scheme("http")
-                .host("10.106.148.12")
+                .host(Constant.SYSTEMIP)
                 .port(8080)
                 .addPathSegment("setUserStatus")
                 .addQueryParameter("username", username)
+                .addQueryParameter("status",status)
                 .build();
         String myUrl = url.toString();
         Request request = new Request.Builder()

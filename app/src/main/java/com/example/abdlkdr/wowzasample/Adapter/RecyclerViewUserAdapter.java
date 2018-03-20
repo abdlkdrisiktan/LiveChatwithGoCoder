@@ -60,18 +60,6 @@ public class RecyclerViewUserAdapter extends RecyclerView.Adapter<RecyclerViewUs
         final User user = mUsers.get(position);
         holder.statusTextView.setText(user.getStatus());
         holder.usernameTextView.setText("@"+user.getUsername());
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent ıntent = new Intent(mContext, MainActivity.class);
-                ıntent.putExtra("username",user.getUsername());
-                ıntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                ıntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                getUser(position);
-                mContext.startActivity(ıntent);
-
-            }
-        });
     }
 
     @Override
