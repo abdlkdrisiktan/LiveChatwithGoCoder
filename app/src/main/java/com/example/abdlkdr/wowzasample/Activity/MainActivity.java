@@ -87,16 +87,13 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-//        sharedPreferences = getSharedPreferences(Constant.MyPREFERENCES, Context.MODE_PRIVATE);
-//        otherUsername = sharedPreferences.getString(Constant.OTHERUSERNAME, "No name");
         otherUsername = getIntentExtra(savedInstanceState);
         Log.e(TAG, "onCreate: otherUsername is   " + otherUsername + " My username  :   " + ListUserActivity.lastUsername);
         bindView();
         createClickStatus();
-        getClickStatus(otherUsername);
-
-
-
+        setVideoView(otherUsername);
+        existRequest();
+//        getClickStatus(otherUsername);
 
         // Initialize the GoCoder SDK
         goCoder = WowzaGoCoder.init(getApplicationContext(), "GOSK-D544-0103-2550-6661-CF99");
@@ -109,7 +106,6 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
                     Toast.LENGTH_LONG).show();
             return;
         }
-
 
         // Associate the WZCameraView defined in the U/I layout with the corresponding class member
         goCoderCameraView = (WZCameraView) findViewById(R.id.camera_preview);
@@ -152,16 +148,42 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
         // Associate the onClick() method as the callback for the broadcast button's click event
         Button broadcastButton = (Button) findViewById(R.id.broadcast_button);
         broadcastButton.setOnClickListener(this);
+        startCamertaView();
     }
 
     @Override
     public void onBackPressed() {
+        goCoderCameraView.stopPreview();
+        if (goCoderBroadcaster.getStatus().isRunning()){
+            goCoderBroadcaster.endBroadcast(this);
+        }
         deleteRequestLiveChat(ListUserActivity.lastUsername);
         setUserStatus(Constant.ONLINE);
         Intent ıntent = new Intent(MainActivity.this,ListUserActivity.class);
         ıntent.putExtra("username",ListUserActivity.lastUsername);
         startActivity(ıntent);
         finish();
+    }
+
+    //------------------------------------------------------------------------------------------------------------------------//
+
+    private void startCamertaView(){
+        // Ensure the minimum set of configuration settings have been specified necessary to
+        // initiate a broadcast streaming session
+        WZStreamingError configValidationError = goCoderBroadcastConfig.validateForBroadcast();
+
+        if (configValidationError != null) {
+            Toast.makeText(this, configValidationError.getErrorDescription(), Toast.LENGTH_LONG).show();
+        } else if (goCoderBroadcaster.getStatus().isRunning()) {
+            // Stop the broadcast that is currently running
+            goCoderBroadcaster.endBroadcast(this);
+            setClickStatus("false");
+        } else {
+            // Start streaming
+            setUserStatus(Constant.OFFLINE);
+            goCoderBroadcaster.startBroadcast(goCoderBroadcastConfig, this);
+            setClickStatus("true");
+        }
     }
 
     // Called when an activity is brought to the foreground
@@ -184,6 +206,7 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
                 goCoderCameraView.onResume();
             else
                 goCoderCameraView.startPreview();
+
         }
 
     }
@@ -216,25 +239,24 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
     // The callback invoked when the broadcast button is pressed
     @Override
     public void onClick(View view) {
-        // return if the user hasn't granted the app the necessary permissions
-        if (!mPermissionsGranted) return;
-
-        // Ensure the minimum set of configuration settings have been specified necessary to
-        // initiate a broadcast streaming session
-        WZStreamingError configValidationError = goCoderBroadcastConfig.validateForBroadcast();
-
-        if (configValidationError != null) {
-            Toast.makeText(this, configValidationError.getErrorDescription(), Toast.LENGTH_LONG).show();
-        } else if (goCoderBroadcaster.getStatus().isRunning()) {
-            // Stop the broadcast that is currently running
-            goCoderBroadcaster.endBroadcast(this);
-            setClickStatus("false");
-        } else {
-            // Start streaming
-            setUserStatus(Constant.OFFLINE);
-            goCoderBroadcaster.startBroadcast(goCoderBroadcastConfig, this);
-            setClickStatus("true");
-        }
+//        // return if the user hasn't granted the app the necessary permissions
+//        if (!mPermissionsGranted) return;
+//        // Ensure the minimum set of configuration settings have been specified necessary to
+//        // initiate a broadcast streaming session
+//        WZStreamingError configValidationError = goCoderBroadcastConfig.validateForBroadcast();
+//
+//        if (configValidationError != null) {
+//            Toast.makeText(this, configValidationError.getErrorDescription(), Toast.LENGTH_LONG).show();
+//        } else if (goCoderBroadcaster.getStatus().isRunning()) {
+//            // Stop the broadcast that is currently running
+//            goCoderBroadcaster.endBroadcast(this);
+//            setClickStatus("false");
+//        } else {
+//            // Start streaming
+//            setUserStatus(Constant.OFFLINE);
+//            goCoderBroadcaster.startBroadcast(goCoderBroadcastConfig, this);
+//            setClickStatus("true");
+//        }
     }
 
     // The callback invoked upon changes to the state of the steaming broadcast
@@ -309,6 +331,8 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
                             | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
     }
 
+    //------------------------------------------------------------------------------------------------------------------------//
+
     //Change the status if status is online then change status to offline
     //İf status is offline change status to online
     private void setUserStatus(String status) {
@@ -364,38 +388,6 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
             setVideoView(toUser);
             e.printStackTrace();
         }
-//            Thread.sleep(3000);
-//            MediaController mediaController = new MediaController(MainActivity.this);
-//            mediaController.setAnchorView(videoView);
-
-        //rtsp://13.95.194.217:1935/videochat/melih
-
-        //rtsp://172.20.10.2:1935/videochat/melih
-        //rtsp://172.20.10.2:1935/videochat/myStream_160p
-//                            Uri uri = Uri.parse(getResources().getString(R.string.play_live_broadcast));
-        //Uri uri = Uri.parse(builder.toString());
-//                            Uri uri = Uri.parse(url.toString());
-//            Uri uri = Uri.parse(liveChatUrl);
-
-//            videoView.start();
-//            videoView.setMediaController(mediaController);
-//            videoView.requestFocus();
-
-//            videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
-//                @Override
-//                public void onPrepared(MediaPlayer mp) {
-//                    Log.e(TAG, "onPrepared: videoview onprepater");
-////                    mp.start();
-//                    videoView.start();
-//                }
-//            });
-//            videoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
-//                @Override
-//                public boolean onError(MediaPlayer mp, int what, int extra) {
-//                    Log.e(TAG, String.format("Error(%s%s)", what, extra));
-//                    return true;
-//                }
-//            });
     }
 
     private void bindView() {
@@ -587,6 +579,54 @@ public class MainActivity extends AppCompatActivity implements WZStatusCallback,
         }
         return username;
     }
+
+    //Check any request comes
+    private void existRequest() {
+        OkHttpClient client = new OkHttpClient();
+        HttpUrl url = new HttpUrl.Builder()
+                .scheme("http")
+                .host(Constant.SYSTEMIP)
+                .port(8080)
+                .addPathSegment("existRequest")
+                .addQueryParameter("username", ListUserActivity.lastUsername)
+                .build();
+        Request request = new Request.Builder().url(url.toString()).build();
+        client.newCall(request)
+                .enqueue(new Callback() {
+                    @Override
+                    public void onFailure(Request request, IOException e) {
+
+                    }
+
+                    @Override
+                    public void onResponse(final Response response) throws IOException {
+                        final String myFinalResponse = response.body().string();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (response.body() != null) {
+                                    String result = myFinalResponse;
+                                    if (result.contentEquals("yes")) {
+                                        new Timer().schedule(new TimerTask() {
+                                            @Override
+                                            public void run() {
+                                                existRequest();
+                                            }
+                                        },3000);
+                                    } else {
+                                        setUserStatus(Constant.ONLINE);
+                                        Intent ıntent = new Intent(MainActivity.this,ListUserActivity.class);
+                                        ıntent.putExtra("username",ListUserActivity.lastUsername);
+                                        startActivity(ıntent);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                });
+    }
+
+    //------------------------------------------------------------------------------------------------------------------------//
 
 
 }

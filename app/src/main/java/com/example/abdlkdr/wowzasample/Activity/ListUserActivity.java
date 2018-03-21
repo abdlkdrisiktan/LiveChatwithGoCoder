@@ -167,7 +167,7 @@ public class ListUserActivity extends AppCompatActivity {
                         recyclerView.setLayoutManager(layoutManager);
                         recyclerView.setHasFixedSize(true);
 //                        recyclerViewUserAdapter.notifyDataSetChanged();
-                        timer.schedule(new TimerTask() {
+                        new Timer().schedule(new TimerTask() {
                             @Override
                             public void run() {
                                 userArrayList.clear();
@@ -176,10 +176,8 @@ public class ListUserActivity extends AppCompatActivity {
                         }, 1000);
                     }
                 });
-
             }
         });
-
     }
 
     //Getting username
@@ -236,8 +234,6 @@ public class ListUserActivity extends AppCompatActivity {
 
                                     if (result.contentEquals("yes")) {
                                         alertDialogBuilder();
-                                        timer.cancel();
-                                        timer.purge();
                                     } else {
                                         timer.schedule(new TimerTask() {
                                             @Override
@@ -274,6 +270,7 @@ public class ListUserActivity extends AppCompatActivity {
                 .setNegativeButton(R.string.alert_dialog_btn_no, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int which) {
                         changeAcceptedStatus("false");
+                        deleteRequestLiveChat(lastUsername);
                     }
                 })
                 .setIcon(android.R.drawable.ic_dialog_alert)
@@ -574,6 +571,32 @@ public class ListUserActivity extends AppCompatActivity {
                     }
                 });
 
+            }
+        });
+
+    }
+
+
+    private void deleteRequestLiveChat(String username){
+        OkHttpClient client = new OkHttpClient();
+        // http://10.106.148.11:8080/deleteRequestLiveChat?username=kadir
+        HttpUrl url = new HttpUrl.Builder()
+                .scheme("http")
+                .host(Constant.SYSTEMIP)
+                .port(8080)
+                .addPathSegment("deleteRequestLiveChat")
+                .addQueryParameter("username", username)
+                .build();
+        Request request = new Request.Builder().url(url.toString()).build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Request request, IOException e) {
+                Log.e(TAG, "onFailure: 567" );
+            }
+
+            @Override
+            public void onResponse(Response response) throws IOException {
+                Log.e(TAG, "onResponse: " );
             }
         });
 
